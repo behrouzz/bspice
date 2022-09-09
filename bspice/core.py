@@ -17,6 +17,8 @@ dc_kernels = {
     #'earth_200101_990628_predict.bpc': 'pck/earth_200101_990628_predict.bpc',
     }
 
+main_kernels = list(dc_kernels.keys())
+
 def download_kernels(overwrite=False, solsys=True, jupiter=False):
     if not os.path.isdir(path):
         os.mkdir(path)
