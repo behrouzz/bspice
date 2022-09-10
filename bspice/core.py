@@ -1,55 +1,10 @@
 import spiceypy as sp
-import requests, os
-from glob import glob
 import numpy as np
 
-NAIF = 'https://naif.jpl.nasa.gov/pub/naif/generic_kernels/'
 
 d2r = 3.141592653589793/180
 r2d = 180/3.141592653589793
-
-path = 'bs_kernels/'
-
-dc_kernels = {
-    'naif0012.tls': 'lsk/naif0012.tls',
-    'pck00010.tpc': 'pck/pck00010.tpc',
-    'earth_latest_high_prec.bpc': 'pck/earth_latest_high_prec.bpc',
-    #'earth_200101_990628_predict.bpc': 'pck/earth_200101_990628_predict.bpc',
-    }
-
-main_kernels = list(dc_kernels.keys())
-
-def download_kernels(overwrite=False, solsys=True, jupiter=False):
-    if not os.path.isdir(path):
-        os.mkdir(path)
-    old_files = glob(path + '/*')
-    old_filenames = [i.split('\\')[-1] for i in old_files]
-
-    if solsys:
-        dc_kernels['de440s.bsp'] = 'spk/planets/de440s.bsp'
-    if jupiter:
-        dc_kernels['jup329.bsp'] = 'spk/satellites/a_old_versions/jup329.bsp'
-
-    if overwrite:
-        for k,v in dc_kernels.items():
-            download_file(NAIF+v, path=path)
-            print(k, 'downloaded.')
-    else:
-        for k,v in dc_kernels.items():
-            if k in old_filenames:
-                print(k, 'already exists.')
-            else:
-                download_file(NAIF+v, path=path)
-                print(k, 'downloaded.')
-                
-
-
-
-def download_file(url, path=''):
-    filename = url.rsplit('/', 1)[-1]
-    r = requests.get(url, allow_redirects=True)
-    open(path+filename, 'wb').write(r.content)
-    
+   
 
 def lonlat_to_cartesian(obs_loc):
     """
@@ -114,6 +69,72 @@ def get_apparent(body, t, obs_loc, kernels, abcorr='LT+S'):
     sp.kclear()
 
     return r, az*r2d, alt*r2d
+
+
+def get_apparent_bodies(bodies, t, obs_loc, kernels, abcorr='LT+S'):
+
+    bodies = [str(i) for i in bodies]
+
+    for k in kernels:
+        sp.furnsh(k)
+
+    et = sp.str2et(str(t))
+    obspos = lonlat_to_cartesian(obs_loc)
+
+    r_az_alt = np.zeros((len(bodies),3))
+
+    for i in range(len(bodies)):
+        state, lt  = sp.azlcpo(
+            method='ELLIPSOID',
+            target=bodies[i],
+            et=et,
+            abcorr=abcorr,
+            azccw=False,
+            elplsz=True,
+            obspos=obspos,
+            obsctr='earth',
+            obsref='ITRF93')
+        r, az, alt = state[:3]
+        r_az_alt[i,:] = r, az*r2d, alt*r2d
+
+    sp.kclear()
+
+    return r_az_alt
+
+
+def get_apparent_window(body, t1, t2, steps, obs_loc, kernels, abcorr='LT+S'):
+
+    if isinstance(body, int):
+        body = str(body)
+
+    for k in kernels:
+        sp.furnsh(k)
+
+    et1 = sp.str2et(str(t1))
+    et2 = sp.str2et(str(t2))
+    t_win = np.linspace(et1, et2, steps)
+    
+    obspos = lonlat_to_cartesian(obs_loc)
+
+    r_az_alt = np.zeros((len(t_win),3))
+
+    for i in range(len(t_win)):
+        state, lt  = sp.azlcpo(
+            method='ELLIPSOID',
+            target=body,
+            et=t_win[i],
+            abcorr=abcorr,
+            azccw=False,
+            elplsz=True,
+            obspos=obspos,
+            obsctr='earth',
+            obsref='ITRF93')
+        r, az, alt = state[:3]
+        r_az_alt[i,:] = r, az*r2d, alt*r2d
+
+    sp.kclear()
+
+    return r_az_alt
 
 
 def gcrs_to_altaz(t, obs_loc, pos_gcrs, kernels=None):
