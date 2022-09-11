@@ -17,7 +17,7 @@ def ecef2enu_rotmat(obs_loc):
 
 
 def enu2altaz(pos_enu):
-    e, n, u =  = pos_enu
+    e, n, u = pos_enu
     r = np.hypot(e, n)
     rng = np.hypot(r, u)
     el = np.arctan2(u, r)
@@ -156,15 +156,15 @@ def get_apparent_window(body, t1, t2, steps, obs_loc, kernels, abcorr='LT+S'):
     return r_az_alt
 
 
-def gcrs_to_altaz(t, obs_loc, pos_gcrs, kernels=None):
+def gcrs_to_altaz(t, obs_loc, pos_gcrs, kernels):
     ecef2enu_rot = ecef2enu_rotmat(obs_loc)
 
     # Calculate J2000 to body-equator-and-prime-meridian rotation matrix
     for k in kernels:
         sp.furnsh(k)
     et = sp.str2et(str(t))
-    #j2000_to_earthfixed_rot = sp.tisbod(ref='J2000', body=399, et=et)[:3,:3]
-    j2000_to_earthfixed_rot = sp.sxform('J2000', 'ITRF93', et)[:3,:3]
+    #j2000_to_earthfixed_rot = sp.tisbod(ref='J2000', body=399, et)[:3,:3]
+    j2000_to_earthfixed_rot = sp.sxform('J2000', 'ITRF93', et)[:3,:3] # et or et+lt ?
     sp.kclear()
 
     # Calculate itrf, enu, altaz
@@ -185,13 +185,13 @@ def get_crs(body, t, abcorr, obs, kernels):
 
 
 def icrs(body, t, kernels, abccorr='NONE'):
-    pos, _, _ = get_crs(body=body, t=t, abcorr=abccorr, obs=0, kernels=kernels)
-    return pos
+    pos, vel, lt = get_crs(body=body, t=t, abcorr=abccorr, obs=0, kernels=kernels)
+    return pos, vel, lt
 
 
 def gcrs(body, t, kernels, abccorr='NONE'):
-    pos, _, _ = get_crs(body=body, t=t, abcorr=abccorr, obs=399, kernels=kernels)
-    return pos
+    pos, vel, lt = get_crs(body=body, t=t, abcorr=abccorr, obs=399, kernels=kernels)
+    return pos, vel, lt
 
 
 def earth_icrs(t, kernels, abccorr='NONE'):
