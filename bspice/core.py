@@ -6,6 +6,25 @@ d2r = 3.141592653589793/180
 r2d = 180/3.141592653589793
    
 
+def ecef2enu_rotmat(obs_loc):
+    lon, lat, _ = obs_loc
+    lon = lon * d2r
+    lat = lat * d2r
+    r1 = [-np.sin(lon), np.cos(lon), 0]
+    r2 = [-np.cos(lon)*np.sin(lat), -np.sin(lon)*np.sin(lat), np.cos(lat)]
+    r3 = [np.cos(lon)*np.cos(lat), np.sin(lon)*np.cos(lat), np.sin(lat)]
+    return np.array([r1, r2, r3])
+
+
+def enu2altaz(pos_enu):
+    e, n, u =  = pos_enu
+    r = np.hypot(e, n)
+    rng = np.hypot(r, u)
+    el = np.arctan2(u, r)
+    az = np.mod(np.arctan2(e, n), 2*np.pi)
+    return az*r2d, el*r2d, rng
+
+
 def lonlat_to_cartesian(obs_loc):
     """
     obs_loc : (lon (deg), lat (deg), alt (m))
@@ -138,30 +157,20 @@ def get_apparent_window(body, t1, t2, steps, obs_loc, kernels, abcorr='LT+S'):
 
 
 def gcrs_to_altaz(t, obs_loc, pos_gcrs, kernels=None):
-    # Calculate ecef2enu rotation matrix
-    lon, lat, _ = obs_loc
-    lon = lon * d2r
-    lat = lat * d2r
-    r1 = [-np.sin(lon), np.cos(lon), 0]
-    r2 = [-np.cos(lon)*np.sin(lat), -np.sin(lon)*np.sin(lat), np.cos(lat)]
-    r3 = [np.cos(lon)*np.cos(lat), np.sin(lon)*np.cos(lat), np.sin(lat)]
-    ecef2enu_rot = np.array([r1, r2, r3])
+    ecef2enu_rot = ecef2enu_rotmat(obs_loc)
 
     # Calculate J2000 to body-equator-and-prime-meridian rotation matrix
     for k in kernels:
         sp.furnsh(k)
     et = sp.str2et(str(t))
-    j2000_to_earthfixed_rot = sp.tisbod(ref='J2000', body=399, et=et)[:3,:3]
+    #j2000_to_earthfixed_rot = sp.tisbod(ref='J2000', body=399, et=et)[:3,:3]
+    j2000_to_earthfixed_rot = sp.sxform('J2000', 'ITRF93', et)[:3,:3]
     sp.kclear()
 
     # Calculate itrf, enu, altaz
     pos_itrf = np.matmul(j2000_to_earthfixed_rot, pos_gcrs)
-    e, n, u = np.matmul(ecef2enu_rot, pos_itrf)
-    r = np.hypot(e, n)
-    rng = np.hypot(r, u)
-    el = np.arctan2(u, r)
-    az = np.mod(np.arctan2(e, n), 2*np.pi)    
-    return az*r2d, el*r2d, rng
+    pos_enu = np.matmul(ecef2enu_rot, pos_itrf)
+    return enu2altaz(pos_enu)
 
 
 def get_crs(body, t, abcorr, obs, kernels):
