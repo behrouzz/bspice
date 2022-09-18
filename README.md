@@ -86,3 +86,51 @@ r_az_alt = bs.get_apparent_window(10, t1, t2, 24, obs_loc, kernels, abcorr='LT+S
 for i in r_az_alt:
     print(f'Az:{i[1]} ||| Alt:{i[2]}')
 ```
+
+## Local and absolute minimum angular positions of Sun and Moon
+
+```python
+import bspice as bs
+
+t1 = '2022-01-01'
+t2 = '2023-01-01'
+
+adr = 'C:/Users/H21/Desktop/Desktop/Behrouz/Astronomy/kernels/'
+
+kernels = [
+    adr + 'naif0012.tls',
+    adr + 'pck00010.tpc',
+    adr + 'de440s.bsp',
+    ]
+
+print('Local:')
+times = bs.conjunction(t1=t1, t2=t2, targ1='sun', targ2='moon', kernels=kernels)
+
+for i in times:
+    print(i)
+
+print('Absolute:')
+times = bs.conjunction(t1=t1, t2=t2, targ1='sun', targ2='moon', kernels=kernels, relate='ABSMIN')
+
+for i in times:
+    print(i)
+```
+
+```
+Local:
+2022-01-02 18:08:14
+2022-02-01 05:32:21
+2022-03-02 17:49:18
+2022-04-01 06:53:57
+2022-04-30 20:41:32
+2022-05-30 11:11:34
+2022-06-29 02:19:09
+2022-07-28 17:40:45
+2022-08-27 08:34:53
+2022-09-25 22:24:24
+2022-10-25 11:00:06
+2022-11-23 22:40:53
+2022-12-23 09:52:10
+Absolute:
+2022-10-25 11:00:06
+```
