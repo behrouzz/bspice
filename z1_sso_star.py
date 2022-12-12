@@ -45,6 +45,6 @@ print('SSO : ', az_sso, alt_sso)
 print('Star: ', az_star, alt_star)
 print('ang_sep: ', ang_sep)
 
-#from hypatie.catalogues import Catalogue
-#cat = Catalogue(name='hipparcos', where='Vmag < 3', n_max=1000)
-#data, meta = cat.download()
+# zodiac stars:
+# https://raw.githubusercontent.com/behrouzz/astrodata/main/hip/hip5_ecliptic.csv
+# code: https://github.com/behrouzz/astronomy/blob/main/ecliptic_stars.py
