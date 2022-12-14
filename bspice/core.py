@@ -169,9 +169,20 @@ def gcrs_to_altaz(t, obs_loc, pos_gcrs, kernels):
     sp.kclear()
 
     # Calculate itrf, enu, altaz
-    pos_itrf = np.matmul(j2000_to_earthfixed_rot, pos_gcrs)
-    pos_enu = np.matmul(ecef2enu_rot, pos_itrf)
-    return enu2altaz(pos_enu)
+    
+    if len(pos_gcrs.shape)==2: # if multiple pos_gcrs
+        pos_itrf = np.zeros(pos_gcrs.shape)
+        pos_enu = np.zeros(pos_gcrs.shape)
+        pos_altaz = np.zeros(pos_gcrs.shape)
+        for i in range(pos_gcrs.shape[0]):
+            pos_itrf[i,:] = np.matmul(j2000_to_earthfixed_rot, pos_gcrs[i,:])
+            pos_enu[i,:] = np.matmul(ecef2enu_rot, pos_itrf[i,:])
+            pos_altaz[i,:] = enu2altaz(pos_enu[i,:])
+    else: # if a single pos_gcrs
+        pos_itrf = np.matmul(j2000_to_earthfixed_rot, pos_gcrs)
+        pos_enu = np.matmul(ecef2enu_rot, pos_itrf)
+        pos_altaz = enu2altaz(pos_enu)
+    return pos_altaz
 
 
 def get_crs(body, t, abcorr, obs, kernels):
