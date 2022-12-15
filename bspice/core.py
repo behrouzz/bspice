@@ -25,7 +25,7 @@ def enu2altaz(pos_enu):
     az = np.mod(np.arctan2(e, n), 2*np.pi)
     return az*r2d, el*r2d, rng
 
-
+'''
 def lonlat_to_cartesian(obs_loc):
     """
     obs_loc : (lon (deg), lat (deg), alt (m))
@@ -40,6 +40,33 @@ def lonlat_to_cartesian(obs_loc):
     f = (re-rp)/re
     obspos = sp.pgrrec(body='earth', lon=lon, lat=lat, alt=alt, re=re, f=f)
     return obspos
+'''
+# It's better to change the name of the following function to "geodetic_to_geocentric"
+def lonlat_to_cartesian(obs_loc):
+   """
+   Convert geoDETIC coordinates (lon, lat, h) to geoCENTRIC coordinates (x, y, z)
+   
+   Arguments
+   ---------
+       obs_loc : Geodetic (geographic) coordinates as (lon (deg), lat (deg), alt (m))
+        
+   Returns
+   -------
+       geocentric coordinates as (x, y, z) in km
+       
+   Ref: Astrophysical formulae, 1999, vol.2, p.5
+   """
+   lon , lat, h = obs_loc
+   h = h/1000 # convert m to km
+   re = 6378.1366 # equatorial radius
+   rp = 6356.7519 # polar radius
+   f = (re-rp)/re # flattening factor
+   C = (np.cos(lat*d2r)**2 + (1-f)**2 * np.sin(lat*d2r)**2) ** (-0.5)
+   S = (1-f)**2 * C
+   x = (re*C + h) * np.cos(lat*d2r) * np.cos(lon*d2r)
+   y = (re*C + h) * np.cos(lat*d2r) * np.sin(lon*d2r)
+   z = (re*S + h) * np.sin(lat*d2r)
+   return np.array([x,y,z])
 
 
 ##def get_icrs(body, t, kernels):
